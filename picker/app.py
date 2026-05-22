@@ -2,6 +2,7 @@
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 import json
+import re
 import subprocess
 import threading
 from pathlib import Path
@@ -68,7 +69,7 @@ def safe_dirname(name):
     return name.strip()
 
 
-def _do_download(appid, name):
+def _do_download(appid, name, limit=10):
     try:
         out = OUTPUT_DIR / safe_dirname(name)
         result = subprocess.run([
@@ -76,7 +77,7 @@ def _do_download(appid, name):
             "--game-id", str(appid),
             "--output", str(out),
             "--sort-by", "toprated",
-            "--limit", "11",
+            "--limit", str(limit),
             "--delay", "3.0",
             "--retries", "3",
         ], capture_output=True, text=True, timeout=600)
@@ -85,6 +86,13 @@ def _do_download(appid, name):
             if not existing_guides:
                 download_jobs[appid] = {"status": "error", "msg": (result.stderr or result.stdout)[-300:]}
                 return
+        # Parse total pages from scraper output to estimate guides available on Steam
+        combined = (result.stdout or "") + (result.stderr or "")
+        m = re.search(r"Determined total pages: (\d+)", combined)
+        if m:
+            steam_total = int(m.group(1)) * 100
+            execute("UPDATE games SET steam_total=? WHERE appid=? AND steam_total<?",
+                    (steam_total, appid, steam_total))
         subprocess.run([str(VENV_PY), str(CONVERT_PY)], capture_output=True, timeout=120)
         subprocess.run([str(VENV_PY), str(STEAM_DUMP), "--sync-fs"], capture_output=True, timeout=30)
         download_jobs[appid] = {"status": "done", "msg": ""}
@@ -193,11 +201,14 @@ def clear_all():
 def download(appid):
     if download_jobs.get(appid, {}).get("status") == "running":
         return jsonify({"status": "running"})
-    rows = query("SELECT name FROM games WHERE appid=?", (appid,))
+    rows = query("SELECT name, guide_count FROM games WHERE appid=?", (appid,))
     if not rows:
         return jsonify({"error": "not found"}), 404
+    # limit = existing guides + 10 (scraper skips existing, fetches next batch)
+    current = rows[0]["guide_count"] or 0
+    limit = current + 10
     download_jobs[appid] = {"status": "running", "msg": ""}
-    threading.Thread(target=_do_download, args=(appid, rows[0]["name"]), daemon=True).start()
+    threading.Thread(target=_do_download, args=(appid, rows[0]["name"], limit), daemon=True).start()
     return jsonify({"status": "running"})
 
 
@@ -205,9 +216,10 @@ def download(appid):
 def job_status(appid):
     job = dict(download_jobs.get(appid, {"status": "idle", "msg": ""}))
     if job["status"] == "done":
-        rows = query("SELECT guide_count, downloaded FROM games WHERE appid=?", (appid,))
+        rows = query("SELECT guide_count, downloaded, steam_total FROM games WHERE appid=?", (appid,))
         if rows:
             job["guide_count"] = rows[0]["guide_count"]
+            job["steam_total"] = rows[0]["steam_total"]
     return jsonify(job)
 
 

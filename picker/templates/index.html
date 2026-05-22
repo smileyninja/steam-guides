@@ -196,8 +196,10 @@ input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color:
       <td>{% for t in tags[:6] %}<span class="chip">{{ t }}</span>{% endfor %}</td>
       <td id="status-{{ g.appid }}">
         {% if g.downloaded %}
-          <span class="dl-yes">✓ {{ g.guide_count }} guides</span>
-          <button class="btn btn-dim btn-sm" style="margin-left:6px" onclick="startDownload({{ g.appid }})">↓</button>
+          <span class="dl-yes">✓ {{ g.guide_count }}{% if g.steam_total > 0 %} / ~{{ g.steam_total }}{% endif %}</span>
+          {% if g.steam_total == 0 or g.guide_count < g.steam_total %}
+          <button class="btn btn-dim btn-sm" style="margin-left:6px" onclick="startDownload({{ g.appid }})">↓ 10 more</button>
+          {% endif %}
         {% else %}
           <button class="btn btn-dim btn-sm" onclick="startDownload({{ g.appid }})">↓ Get</button>
         {% endif %}
@@ -267,6 +269,14 @@ function startDownload(appid) {
     });
 }
 
+function doneHtml(appid, n, total) {
+  const countStr = (total > 0) ? '✓ ' + n + ' / ~' + total : '✓ ' + n;
+  const moreBtn = (total === 0 || n < total)
+    ? ' <button class="btn btn-dim btn-sm" style="margin-left:6px" onclick="startDownload(' + appid + ')">↓ 10 more</button>'
+    : '';
+  return '<span class="dl-yes">' + countStr + '</span>' + moreBtn;
+}
+
 function pollStatus(appid) {
   pollTimers[appid] = setInterval(() => {
     fetch('/job-status/' + appid)
@@ -274,8 +284,7 @@ function pollStatus(appid) {
       .then(d => {
         if (d.status === 'done') {
           clearInterval(pollTimers[appid]);
-          const n = d.guide_count || '?';
-          setStatus(appid, '<span class="dl-yes">✓ ' + n + ' guides</span> <button class="btn btn-dim btn-sm" style="margin-left:6px" onclick="startDownload(' + appid + ')">↓</button>');
+          setStatus(appid, doneHtml(appid, d.guide_count || 0, d.steam_total || 0));
         } else if (d.status === 'error') {
           clearInterval(pollTimers[appid]);
           setStatus(appid, '<span class="dl-err" title="' + (d.msg||'') + '">⚠ Error — retry?</span> <button class="btn btn-dim btn-sm" onclick="startDownload(' + appid + ')">↓</button>');
