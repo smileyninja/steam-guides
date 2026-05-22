@@ -54,7 +54,7 @@ def build_filter_sql(tag, genre, dl, q, prefix="WHERE", tag2="", tag3=""):
     elif dl == "no":
         clauses.append("downloaded=0")
     if q:
-        clauses.append("name LIKE ?")
+        clauses.append("LOWER(name) LIKE LOWER(?)")
         params.append(f"%{q}%")
     sql = (f"{prefix} " + " AND ".join(clauses)) if clauses else ""
     return sql, params
