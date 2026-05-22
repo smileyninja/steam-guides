@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steam Guide Picker</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1b2838; color: #c6d4df; font-size: 14px;
+}
+
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: #171a21; border-bottom: 1px solid #2a475e; padding: 10px 16px;
+}
+.topbar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+h1 { font-size: 1.05rem; color: #c6d4df; white-space: nowrap; }
+.stats { font-size: 0.82rem; color: #8f98a0; }
+.stats strong { color: #1a9fff; }
+.badge { background: #1a9fff; color: #fff; padding: 1px 9px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; }
+.sep { color: #2a475e; }
+
+.filters { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.filters input[type=text] {
+  background: #2a475e; border: 1px solid #4a6b7a; color: #c6d4df;
+  padding: 5px 10px; border-radius: 3px; width: 170px; font-size: 0.85rem;
+}
+.filters input[type=text]::placeholder { color: #8f98a0; }
+.filters input[type=text]:focus { outline: none; border-color: #1a9fff; }
+.filters select {
+  background: #2a475e; border: 1px solid #4a6b7a; color: #c6d4df;
+  padding: 5px 7px; border-radius: 3px; cursor: pointer; font-size: 0.85rem;
+}
+.filters select:focus { outline: none; border-color: #1a9fff; }
+
+.btn { padding: 5px 11px; border: none; border-radius: 3px; cursor: pointer; font-size: 0.82rem; font-weight: 500; white-space: nowrap; }
+.btn-blue  { background: #1a9fff; color: #fff; }
+.btn-blue:hover { background: #3db8ff; }
+.btn-dim   { background: #2a475e; color: #8f98a0; }
+.btn-dim:hover { background: #3a5a70; color: #c6d4df; }
+.btn-red   { background: #6b2a2a; color: #c6d4df; }
+.btn-red:hover { background: #8b3a3a; }
+.btn-green { background: #2a5e2a; color: #a6e3a1; }
+.btn-green:hover { background: #3a7a3a; }
+.btn-sm { padding: 3px 8px; font-size: 0.78rem; }
+a.clear-link { color: #8f98a0; font-size: 0.82rem; text-decoration: none; padding: 5px 3px; }
+a.clear-link:hover { color: #c6d4df; }
+
+/* Settings panel */
+.settings-panel {
+  display: none; margin-top: 8px; padding: 10px 12px;
+  background: #0f1923; border: 1px solid #2a475e; border-radius: 4px;
+}
+.settings-panel.open { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.settings-panel input[type=text] {
+  background: #2a475e; border: 1px solid #4a6b7a; color: #c6d4df;
+  padding: 5px 10px; border-radius: 3px; width: 320px; font-size: 0.84rem;
+  font-family: monospace;
+}
+.settings-panel label { font-size: 0.82rem; color: #8f98a0; }
+.api-status { font-size: 0.8rem; }
+.api-ok  { color: #5ba32b; }
+.api-no  { color: #c17a1a; }
+
+/* Refresh status */
+#refresh-msg { font-size: 0.8rem; color: #8f98a0; }
+
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+col.c-chk    { width: 36px; }
+col.c-name   { }
+col.c-time   { width: 72px; }
+col.c-tags   { width: 290px; }
+col.c-status { width: 150px; }
+
+thead th {
+  position: sticky; top: 0;
+  background: #171a21; padding: 8px 10px; text-align: left;
+  font-size: 0.73rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: #8f98a0; border-bottom: 1px solid #2a475e; white-space: nowrap;
+  user-select: none;
+}
+thead th.sortable { cursor: pointer; }
+thead th.sortable:hover { color: #c6d4df; }
+thead th.sort-active { color: #1a9fff; }
+
+tbody tr { transition: background 0.08s; }
+tbody tr:hover td { background: #1e3147; }
+tbody tr.sel td   { background: #1a3a20; }
+tbody tr.sel:hover td { background: #22492a; }
+
+td {
+  padding: 6px 10px; border-bottom: 1px solid #1a2535;
+  vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.c-chk-td { text-align: center; }
+input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color: #1a9fff; }
+.game-name { font-weight: 500; color: #dce8f0; }
+.playtime  { color: #8f98a0; font-size: 0.84rem; }
+.chip {
+  display: inline-block; background: #1e3451; color: #89c5f5;
+  padding: 1px 6px; border-radius: 3px; font-size: 0.72rem; margin-right: 3px;
+}
+.dl-yes   { color: #5ba32b; font-size: 0.84rem; }
+.dl-no    { color: #3a4a5a; font-size: 0.84rem; }
+.dl-spin  { color: #1a9fff; font-size: 0.84rem; }
+.dl-err   { color: #c14a4a; font-size: 0.84rem; }
+.empty { text-align: center; padding: 60px; color: #3a4a5a; font-size: 1rem; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { display: inline-block; animation: spin 1s linear infinite; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>Steam Guide Picker</h1>
+    <span class="stats">Showing <strong>{{ games|length }}</strong> / <strong>{{ total }}</strong></span>
+    <span class="stats">Selected: <span class="badge" id="sel-count">{{ selected_count }}</span></span>
+    <span class="sep">|</span>
+    <button class="btn btn-dim"   onclick="selectVisible()">Select Visible</button>
+    <button class="btn btn-red"   onclick="clearAll()">Clear All</button>
+    <span class="sep">|</span>
+    <button class="btn btn-green" id="refresh-btn" onclick="refreshLibrary()">↻ Refresh Library</button>
+    <span id="refresh-msg"></span>
+    <button class="btn btn-dim"   onclick="toggleSettings()" title="API key settings">⚙</button>
+  </div>
+
+  <div class="settings-panel" id="settings-panel">
+    <label>Steam API key:</label>
+    <input type="text" id="api-key-input" placeholder="paste key here…">
+    <button class="btn btn-blue btn-sm" onclick="saveApiKey()">Save</button>
+    <span class="api-status {% if has_api_key %}api-ok{% else %}api-no{% endif %}">
+      {% if has_api_key %}✓ key saved{% else %}no key — needed for Refresh Library{% endif %}
+    </span>
+  </div>
+
+  <form class="filters" id="ff" method="get" action="/">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search…">
+    <select name="tag" onchange="this.form.submit()">
+      <option value="">Tag 1…</option>
+      {% for t in all_tags %}<option value="{{ t }}" {% if t == tag %}selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select>
+    <select name="tag2" onchange="this.form.submit()">
+      <option value="">Tag 2…</option>
+      {% for t in all_tags %}<option value="{{ t }}" {% if t == tag2 %}selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select>
+    <select name="tag3" onchange="this.form.submit()">
+      <option value="">Tag 3…</option>
+      {% for t in all_tags %}<option value="{{ t }}" {% if t == tag3 %}selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select>
+    <select name="genre" onchange="this.form.submit()">
+      <option value="">All genres</option>
+      {% for g in all_genres %}<option value="{{ g }}" {% if g == genre %}selected{% endif %}>{{ g }}</option>{% endfor %}
+    </select>
+    <select name="dl" onchange="this.form.submit()">
+      <option value="">All</option>
+      <option value="yes" {% if dl=='yes' %}selected{% endif %}>Downloaded</option>
+      <option value="no"  {% if dl=='no'  %}selected{% endif %}>Not downloaded</option>
+    </select>
+    <button type="submit" class="btn btn-blue">Filter</button>
+    <a href="/" class="clear-link">✕ Clear</a>
+  </form>
+</div>
+
+{% macro sa(col) %}{% if sort == col %}{{ '↓' if order == 'desc' else '↑' }}{% else %}<span style="opacity:0.3">↕</span>{% endif %}{% endmacro %}
+
+<table>
+  <colgroup>
+    <col class="c-chk"><col class="c-name"><col class="c-time"><col class="c-tags"><col class="c-status">
+  </colgroup>
+  <thead>
+    <tr>
+      <th class="c-chk-td">✓</th>
+      <th class="sortable {{ 'sort-active' if sort=='name' }}"      onclick="sortBy('name')">Game {{ sa('name') }}</th>
+      <th class="sortable {{ 'sort-active' if sort=='playtime' }}"  onclick="sortBy('playtime')">Playtime {{ sa('playtime') }}</th>
+      <th>Tags</th>
+      <th class="sortable {{ 'sort-active' if sort in ('downloaded','guides') }}" onclick="sortBy('downloaded')">Status {{ sa('downloaded') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for g in games %}
+    {% set tags = g.tags | fromjson %}
+    <tr id="r{{ g.appid }}" class="{{ 'sel' if g.selected else '' }}">
+      <td class="c-chk-td">
+        <input type="checkbox" {% if g.selected %}checked{% endif %} onchange="toggle({{ g.appid }}, this)">
+      </td>
+      <td class="game-name" title="{{ g.name }}">{{ g.name }}</td>
+      <td class="playtime">
+        {%- set h = g.playtime // 60 -%}{%- set m = g.playtime % 60 -%}
+        {{ '%dh %02dm'|format(h,m) if h else '%dm'|format(m) }}
+      </td>
+      <td>{% for t in tags[:6] %}<span class="chip">{{ t }}</span>{% endfor %}</td>
+      <td id="status-{{ g.appid }}">
+        {% if g.downloaded %}
+          <span class="dl-yes">✓ {{ g.guide_count }} guides</span>
+          <button class="btn btn-dim btn-sm" style="margin-left:6px" onclick="startDownload({{ g.appid }})">↓</button>
+        {% else %}
+          <button class="btn btn-dim btn-sm" onclick="startDownload({{ g.appid }})">↓ Get</button>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="empty">No games match the current filters.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>
+// ── Sticky header offset ──────────────────────────────────────────────────────
+function fixStickyHeader() {
+  const h = document.querySelector('.topbar').offsetHeight;
+  document.querySelectorAll('thead th').forEach(th => th.style.top = h + 'px');
+}
+window.addEventListener('load', fixStickyHeader);
+window.addEventListener('resize', fixStickyHeader);
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+function sortBy(col) {
+  const p = new URLSearchParams(window.location.search);
+  const cur = p.get('sort');
+  const curOrder = p.get('order') || 'desc';
+  p.set('sort', col);
+  p.set('order', (cur === col && curOrder === 'desc') ? 'asc' : 'desc');
+  window.location = '/?' + p.toString();
+}
+
+// ── Toggle select ────────────────────────────────────────────────────────────
+function toggle(appid, cb) {
+  fetch('/toggle/' + appid, {method: 'POST'})
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('r' + appid).className = d.selected ? 'sel' : '';
+      document.getElementById('sel-count').textContent = d.total_selected;
+    })
+    .catch(() => { cb.checked = !cb.checked; });
+}
+
+function currentFilters() {
+  const fd = new FormData();
+  for (const [k, v] of new URLSearchParams(window.location.search)) fd.append(k, v);
+  return fd;
+}
+
+function selectVisible() {
+  fetch('/select-visible', {method: 'POST', body: currentFilters()}).then(() => location.reload());
+}
+
+function clearAll() {
+  if (!confirm('Deselect all games?')) return;
+  fetch('/clear-all', {method: 'POST'}).then(() => location.reload());
+}
+
+// ── Download now ─────────────────────────────────────────────────────────────
+const pollTimers = {};
+
+function startDownload(appid) {
+  setStatus(appid, '<span class="dl-spin"><span class="spinner">⟳</span> Downloading…</span>');
+  fetch('/download/' + appid, {method: 'POST'})
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === 'running') pollStatus(appid);
+      else if (d.error) setStatus(appid, '<span class="dl-err">⚠ ' + d.error + '</span>');
+    });
+}
+
+function pollStatus(appid) {
+  pollTimers[appid] = setInterval(() => {
+    fetch('/job-status/' + appid)
+      .then(r => r.json())
+      .then(d => {
+        if (d.status === 'done') {
+          clearInterval(pollTimers[appid]);
+          const n = d.guide_count || '?';
+          setStatus(appid, '<span class="dl-yes">✓ ' + n + ' guides</span> <button class="btn btn-dim btn-sm" style="margin-left:6px" onclick="startDownload(' + appid + ')">↓</button>');
+        } else if (d.status === 'error') {
+          clearInterval(pollTimers[appid]);
+          setStatus(appid, '<span class="dl-err" title="' + (d.msg||'') + '">⚠ Error — retry?</span> <button class="btn btn-dim btn-sm" onclick="startDownload(' + appid + ')">↓</button>');
+        }
+      });
+  }, 3000);
+}
+
+function setStatus(appid, html) {
+  const el = document.getElementById('status-' + appid);
+  if (el) el.innerHTML = html;
+}
+
+// ── Refresh library ───────────────────────────────────────────────────────────
+let refreshTimer = null;
+
+function refreshLibrary() {
+  document.getElementById('refresh-btn').disabled = true;
+  document.getElementById('refresh-msg').textContent = 'Fetching from Steam…';
+  fetch('/refresh-library', {method: 'POST'});
+  refreshTimer = setInterval(() => {
+    fetch('/refresh-status')
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('refresh-msg').textContent = d.msg || '';
+        if (d.status === 'done' || d.status === 'error') {
+          clearInterval(refreshTimer);
+          document.getElementById('refresh-btn').disabled = false;
+          if (d.status === 'done') location.reload();
+        }
+      });
+  }, 3000);
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function toggleSettings() {
+  document.getElementById('settings-panel').classList.toggle('open');
+}
+
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) return;
+  const fd = new FormData();
+  fd.append('key', key);
+  fetch('/save-api-key', {method: 'POST', body: fd})
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) location.reload();
+    });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+# Scraped guide content (game folders)
+/Assassin's Creed IV Black Flag/
+/Autonauts/
+/Avernum/
+/Avernum_ Escape From the Pit/
+/Beltex/
+/Beltmatic/
+/Builderment/
+/Dyson Sphere Program/
+/EXAPUNKS/
+/Factorio/
+/Factory Town/
+/FOUNDRY/
+/Infinifactory/
+/Mindustry/
+/No Man's Sky/
+/Opus Magnum/
+/Satisfactory/
+/shapez/
+/SHENZHEN IO/
+/Techtonica/
+/Warlock 2_ The Exiled/
+
+# Data files
+game-picker.tsv
+steam_picker.db
+steam-games.txt
+overnight_scrape.log
+
+# Secrets
+.steam_api_key
+
+# Scraper venv
+steam-guide-scraper/venv/
+steam-guide-scraper/__pycache__/
+__pycache__/
+*.pyc
+
+# Any future game folders (catch-all for directories not in repo)

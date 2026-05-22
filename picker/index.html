@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steam Guide Picker</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1b2838;
+  color: #c6d4df;
+  font-size: 14px;
+}
+
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: #171a21;
+  border-bottom: 1px solid #2a475e;
+  padding: 10px 16px;
+}
+
+.topbar-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+h1 { font-size: 1.05rem; color: #c6d4df; white-space: nowrap; }
+
+.stats { font-size: 0.82rem; color: #8f98a0; }
+.stats strong { color: #1a9fff; }
+
+.badge {
+  background: #1a9fff; color: #fff;
+  padding: 1px 9px; border-radius: 10px;
+  font-size: 0.82rem; font-weight: 600;
+}
+
+.sep { color: #2a475e; }
+
+.filters {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+}
+
+.filters input[type=text] {
+  background: #2a475e; border: 1px solid #4a6b7a; color: #c6d4df;
+  padding: 5px 10px; border-radius: 3px; width: 190px; font-size: 0.85rem;
+}
+.filters input[type=text]::placeholder { color: #8f98a0; }
+.filters input[type=text]:focus { outline: none; border-color: #1a9fff; }
+
+.filters select {
+  background: #2a475e; border: 1px solid #4a6b7a; color: #c6d4df;
+  padding: 5px 8px; border-radius: 3px; cursor: pointer; font-size: 0.85rem;
+}
+.filters select:focus { outline: none; border-color: #1a9fff; }
+
+.btn {
+  padding: 5px 12px; border: none; border-radius: 3px;
+  cursor: pointer; font-size: 0.82rem; font-weight: 500; white-space: nowrap;
+}
+.btn-blue { background: #1a9fff; color: #fff; }
+.btn-blue:hover { background: #3db8ff; }
+.btn-dim  { background: #2a475e; color: #8f98a0; }
+.btn-dim:hover { background: #3a5a70; color: #c6d4df; }
+.btn-red  { background: #6b2a2a; color: #c6d4df; }
+.btn-red:hover { background: #8b3a3a; }
+a.clear-link { color: #8f98a0; font-size: 0.82rem; text-decoration: none; padding: 5px 4px; }
+a.clear-link:hover { color: #c6d4df; }
+
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+col.c-chk    { width: 36px; }
+col.c-name   { }
+col.c-time   { width: 75px; }
+col.c-tags   { width: 310px; }
+col.c-status { width: 130px; }
+
+thead th {
+  position: sticky; top: 95px;
+  background: #171a21;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8f98a0;
+  border-bottom: 1px solid #2a475e;
+  white-space: nowrap;
+}
+
+tbody tr { transition: background 0.08s; }
+tbody tr:hover td { background: #1e3147; }
+tbody tr.sel td   { background: #1a3a20; }
+tbody tr.sel:hover td { background: #22492a; }
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #1a2535;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-chk-td { text-align: center; }
+input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color: #1a9fff; }
+
+.game-name { font-weight: 500; color: #dce8f0; }
+.playtime  { color: #8f98a0; font-size: 0.84rem; }
+
+.chip {
+  display: inline-block;
+  background: #1e3451; color: #89c5f5;
+  padding: 1px 6px; border-radius: 3px;
+  font-size: 0.72rem; margin-right: 3px;
+}
+
+.dl-yes { color: #5ba32b; font-size: 0.84rem; }
+.dl-no  { color: #3a4a5a; font-size: 0.84rem; }
+
+.empty { text-align: center; padding: 60px; color: #3a4a5a; font-size: 1rem; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>Steam Guide Picker</h1>
+    <span class="stats">Showing <strong>{{ games|length }}</strong> / <strong>{{ total }}</strong></span>
+    <span class="stats">Selected: <span class="badge" id="sel-count">{{ selected_count }}</span></span>
+    <span class="sep">|</span>
+    <button class="btn btn-dim" onclick="selectVisible()">Select Visible</button>
+    <button class="btn btn-red" onclick="clearAll()">Clear All</button>
+  </div>
+
+  <form class="filters" id="ff" method="get" action="/">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search games…">
+    <select name="tag" onchange="this.form.submit()">
+      <option value="">Tag 1…</option>
+      {% for t in all_tags %}
+      <option value="{{ t }}" {% if t == tag %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    <select name="tag2" onchange="this.form.submit()">
+      <option value="">Tag 2…</option>
+      {% for t in all_tags %}
+      <option value="{{ t }}" {% if t == tag2 %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    <select name="tag3" onchange="this.form.submit()">
+      <option value="">Tag 3…</option>
+      {% for t in all_tags %}
+      <option value="{{ t }}" {% if t == tag3 %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    <select name="genre" onchange="this.form.submit()">
+      <option value="">All genres</option>
+      {% for g in all_genres %}
+      <option value="{{ g }}" {% if g == genre %}selected{% endif %}>{{ g }}</option>
+      {% endfor %}
+    </select>
+    <select name="dl" onchange="this.form.submit()">
+      <option value="">All</option>
+      <option value="yes" {% if dl=='yes' %}selected{% endif %}>Downloaded</option>
+      <option value="no"  {% if dl=='no'  %}selected{% endif %}>Not downloaded</option>
+    </select>
+    <button type="submit" class="btn btn-blue">Filter</button>
+    <a href="/" class="clear-link">✕ Clear</a>
+  </form>
+</div>
+
+<table>
+  <colgroup>
+    <col class="c-chk"><col class="c-name"><col class="c-time"><col class="c-tags"><col class="c-status">
+  </colgroup>
+  <thead>
+    <tr>
+      <th class="c-chk-td">✓</th>
+      <th>Game</th>
+      <th>Playtime</th>
+      <th>Tags</th>
+      <th>Downloaded</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for g in games %}
+    {% set tags = g.tags | fromjson %}
+    <tr id="r{{ g.appid }}" class="{{ 'sel' if g.selected else '' }}">
+      <td class="c-chk-td">
+        <input type="checkbox" {% if g.selected %}checked{% endif %} onchange="toggle({{ g.appid }}, this)">
+      </td>
+      <td class="game-name" title="{{ g.name }}">{{ g.name }}</td>
+      <td class="playtime">
+        {%- set h = g.playtime // 60 -%}
+        {%- set m = g.playtime % 60 -%}
+        {{ '%dh %02dm' | format(h, m) if h else '%dm' | format(m) }}
+      </td>
+      <td>{% for t in tags[:6] %}<span class="chip">{{ t }}</span>{% endfor %}</td>
+      <td>
+        {% if g.downloaded %}<span class="dl-yes">✓ {{ g.guide_count }} guides</span>
+        {% else %}<span class="dl-no">—</span>{% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="empty">No games match the current filters.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>
+function toggle(appid, cb) {
+  fetch('/toggle/' + appid, {method: 'POST'})
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('r' + appid).className = d.selected ? 'sel' : '';
+      document.getElementById('sel-count').textContent = d.total_selected;
+    })
+    .catch(() => { cb.checked = !cb.checked; });
+}
+
+function currentFilters() {
+  const fd = new FormData();
+  const p = new URLSearchParams(window.location.search);
+  for (const [k, v] of p) fd.append(k, v);
+  return fd;
+}
+
+function selectVisible() {
+  fetch('/select-visible', {method: 'POST', body: currentFilters()})
+    .then(() => location.reload());
+}
+
+function clearAll() {
+  if (!confirm('Deselect all games?')) return;
+  fetch('/clear-all', {method: 'POST'})
+    .then(() => location.reload());
+}
+</script>
+</body>
+</html>
