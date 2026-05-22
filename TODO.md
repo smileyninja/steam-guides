@@ -14,7 +14,7 @@ Or prompt the user to enter their Steam profile URL (e.g. `https://steamcommunit
 
 ---
 
-## 2. Replace Obsidian with an open-source alternative
+## 2. ~~Replace Obsidian with an open-source alternative~~ — Done
 
 Obsidian is free but closed-source and not self-hostable. Research candidates:
 
@@ -30,7 +30,7 @@ Obsidian is free but closed-source and not self-hostable. Research candidates:
 
 `obsidian_convert.py` already writes clean Markdown with YAML frontmatter — output is largely compatible with all of the above.
 
-**Action:** Spin up Silverbullet on hp-elite800, point it at `~/Documents/Steam Guides/`, test that dataview-style queries work (Silverbullet has its own query language called "Space Lua").
+**Done:** SilverBullet v2.8.1 running on hp-elite800 as a systemd user service. HTTPS served via `tailscale serve` at `https://hp-elite800.tailcbb8e3.ts.net`. `obsidian_convert.py` now writes to both `~/Sync/Steam Guides/` (Obsidian/Syncthing) and `~/silverbullet/space/Steam Guides/`. Both destinations kept in sync by the nightly cron — no Syncthing changes needed. Note: dataview query blocks in index pages render as inert code blocks in SilverBullet; guide content itself works fine.
 
 ---
 
@@ -86,7 +86,7 @@ curl -fsSL https://raw.githubusercontent.com/smileyninja/steam-guides/main/insta
 
 - [ ] Auto Steam ID detection (unblocks new installs without code edits)
 - [ ] Write `install.sh` + `requirements.txt` (makes the project actually shareable)
-- [ ] Evaluate Silverbullet as Obsidian replacement
+- [x] Evaluate Silverbullet as Obsidian replacement
 - [ ] Replace Syncthing with rsync cron (or Unison if bidirectional needed)
 - [ ] Full packaging (Makefile, systemd unit template, Docker Compose optional)
 

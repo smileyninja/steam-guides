@@ -17,8 +17,9 @@ from urllib.parse import unquote, urlparse, parse_qs
 
 import yaml
 
-SOURCE = Path.home() / "steam-guides"
-DEST   = Path.home() / "Sync" / "Steam Guides"
+SOURCE  = Path.home() / "steam-guides"
+DEST    = Path.home() / "Sync" / "Steam Guides"
+SB_DEST = Path.home() / "silverbullet" / "space" / "Steam Guides"
 
 # Folders to skip (appid-only folders handled separately, misc files)
 SKIP = {
@@ -227,6 +228,10 @@ def main(games: list[str] | None = None) -> None:
 
     write_global_index(DEST, converted_games)
     print(f"\nDone — {len(converted_games)} games → {DEST}")
+
+    SB_DEST.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(DEST, SB_DEST, dirs_exist_ok=True)
+    print(f"Synced → {SB_DEST}")
 
 
 if __name__ == "__main__":

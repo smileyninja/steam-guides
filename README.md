@@ -1,6 +1,6 @@
 # steam-guides
 
-Scrapes Steam community guides for games in your library, converts them to Obsidian-friendly markdown, and syncs them to all devices via Syncthing.
+Scrapes Steam community guides for games in your library, converts them to markdown, and serves them via SilverBullet (self-hosted web app) while also syncing to Obsidian via Syncthing.
 
 ## Components
 
@@ -9,7 +9,8 @@ Scrapes Steam community guides for games in your library, converts them to Obsid
 | `picker/app.py` | Flask web app — browse/select games, trigger downloads |
 | `picker/steam_dump.py` | Fetches Steam library, enriches with SteamSpy tags, manages SQLite DB |
 | `scrape_overnight.sh` | Overnight batch scraper (runs selected games not yet downloaded) |
-| `obsidian_convert.py` | Converts raw `.md` guides → Obsidian format with frontmatter and dataview index |
+| `obsidian_convert.py` | Converts raw `.md` guides → Obsidian format with frontmatter and dataview index; also copies to SilverBullet space |
+| `silverbullet.service` | systemd user service template for SilverBullet |
 
 ## Setup
 
@@ -54,5 +55,44 @@ Save your API key to `~/steam-guides/.steam_api_key` so the cron job can read it
 ## Output
 
 - Raw guides saved to `~/steam-guides/<Game Name>/`
-- Converted guides written to `~/Documents/Obsidian Vault/Steam Guides/`
-- Syncthing distributes the Obsidian vault to all devices automatically
+- Converted guides written to `~/Sync/Steam Guides/` (Syncthing → Obsidian on all devices)
+- Copied to `~/silverbullet/space/Steam Guides/` (served by SilverBullet)
+
+## SilverBullet
+
+SilverBullet is a self-hosted web note app that serves the guides over HTTPS on your Tailnet. Access from any device via browser — no Obsidian install needed.
+
+**Install (binary, Linux x86_64):**
+
+```bash
+mkdir -p ~/silverbullet/space
+curl -L -o /tmp/silverbullet.zip https://github.com/silverbulletmd/silverbullet/releases/latest/download/silverbullet-server-linux-x86_64.zip
+unzip /tmp/silverbullet.zip -d ~/silverbullet/
+chmod +x ~/silverbullet/silverbullet
+```
+
+**systemd user service:**
+
+```bash
+cp silverbullet.service ~/.config/systemd/user/silverbullet.service
+# Edit SB_USER=username:password in the service file before enabling
+systemctl --user daemon-reload
+systemctl --user enable --now silverbullet
+loginctl enable-linger $USER
+```
+
+**HTTPS via Tailscale (run once):**
+
+```bash
+sudo tailscale set --operator=$USER
+tailscale serve --bg 3000
+```
+
+Access at `https://<hostname>.<tailnet>.ts.net` from any Tailscale device.
+
+**Upgrade:**
+
+```bash
+~/silverbullet/silverbullet upgrade
+systemctl --user restart silverbullet
+```
