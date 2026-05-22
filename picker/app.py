@@ -81,8 +81,10 @@ def _do_download(appid, name):
             "--retries", "3",
         ], capture_output=True, text=True, timeout=600)
         if result.returncode != 0:
-            download_jobs[appid] = {"status": "error", "msg": (result.stderr or result.stdout)[-300:]}
-            return
+            existing_guides = list(out.glob("*.md")) if out.exists() else []
+            if not existing_guides:
+                download_jobs[appid] = {"status": "error", "msg": (result.stderr or result.stdout)[-300:]}
+                return
         subprocess.run([str(VENV_PY), str(CONVERT_PY)], capture_output=True, timeout=120)
         subprocess.run([str(VENV_PY), str(STEAM_DUMP), "--sync-fs"], capture_output=True, timeout=30)
         download_jobs[appid] = {"status": "done", "msg": ""}
