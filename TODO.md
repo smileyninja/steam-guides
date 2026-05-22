@@ -89,3 +89,19 @@ curl -fsSL https://raw.githubusercontent.com/smileyninja/steam-guides/main/insta
 - [ ] Evaluate Silverbullet as Obsidian replacement
 - [ ] Replace Syncthing with rsync cron (or Unison if bidirectional needed)
 - [ ] Full packaging (Makefile, systemd unit template, Docker Compose optional)
+
+---
+
+## 5. ~~Case-sensitive search~~ — Fixed
+
+`LOWER(name) LIKE LOWER(?)` applied in `picker/app.py`. Searching "baldur" now matches "Baldur's Gate 3".
+
+---
+
+## 6. ~~Mature-rated games not downloading~~ — Fixed
+
+Steam requires a `wants_mature_content_apps` cookie to serve guide pages for M-rated games (e.g. Baldur's Gate 3, Cyberpunk 2077). Without it, the scraper received a valid 200 response but 0 guide links.
+
+**Fix applied:** Patched `steam-guide-scraper/steam_guide_scraper.py` locally to pass the mature content cookie when fetching guide listing pages. Verified BG3 now downloads 3/3 guides.
+
+**Note:** The scraper is a third-party repo (github.com/glimgeist/steam-guide-scraper). Patch is on the local copy only — if the scraper is ever re-cloned or updated, re-apply the patch. Consider forking it under smileyninja.
