@@ -3,7 +3,7 @@
 Convert scraped Steam guides to Obsidian-friendly markdown.
 
 Source:  ~/steam-guides/<Game Name>/<guide_id>.md  (read-only)
-Output:  ~/Documents/Obsidian Vault/Steam Guides/<Game Name>/<guide_id>.md
+Output:  ~/Sync/Steam Guides/<Game Name>/<guide_id>.md
          ~/Documents/Obsidian Vault/Steam Guides/<Game Name>/index.md
          ~/Documents/Obsidian Vault/Steam Guides/index.md
 """
@@ -18,7 +18,7 @@ from urllib.parse import unquote, urlparse, parse_qs
 import yaml
 
 SOURCE = Path.home() / "steam-guides"
-DEST   = Path.home() / "Documents" / "Obsidian Vault" / "Steam Guides"
+DEST   = Path.home() / "Sync" / "Steam Guides"
 
 # Folders to skip (appid-only folders handled separately, misc files)
 SKIP = {
