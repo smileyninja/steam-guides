@@ -104,4 +104,4 @@ Steam requires a `wants_mature_content_apps` cookie to serve guide pages for M-r
 
 **Fix applied:** Patched `steam-guide-scraper/steam_guide_scraper.py` locally to pass the mature content cookie when fetching guide listing pages. Verified BG3 now downloads 3/3 guides.
 
-**Note:** The scraper is a third-party repo (github.com/glimgeist/steam-guide-scraper). Patch is on the local copy only — if the scraper is ever re-cloned or updated, re-apply the patch. Consider forking it under smileyninja.
+**Note:** The scraper is a third-party repo (github.com/glimgeist/steam-guide-scraper). Patch is on the local copy only — if the scraper is ever re-cloned or updated, re-apply the patch. Forked to github.com/smileyninja/steam-guide-scraper — local copy now tracks the fork.
