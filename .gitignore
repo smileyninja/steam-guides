@@ -1,8 +1,9 @@
 # Scraped guide content (game folders)
-/Assassin's Creed IV Black Flag/
+/Assassin’s Creed IV Black Flag/
 /Autonauts/
 /Avernum/
 /Avernum_ Escape From the Pit/
+/Baldur's Gate 3/
 /Beltex/
 /Beltmatic/
 /Builderment/
@@ -18,7 +19,9 @@
 /Satisfactory/
 /shapez/
 /SHENZHEN IO/
+/Stellar Tactics/
 /Techtonica/
+/Vanguard Galaxy/
 /Warlock 2_ The Exiled/
 
 # Data files
@@ -26,6 +29,8 @@ game-picker.tsv
 steam_picker.db
 steam-games.txt
 overnight_scrape.log
+.enrichment-cache.json
+.game-name-cache.json
 
 # Secrets
 .steam_api_key
